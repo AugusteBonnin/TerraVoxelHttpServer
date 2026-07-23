@@ -18,7 +18,7 @@ TerraVoxelHttpServer est un service HTTP écrit en C++ avec Qt 6 pour exposer de
 
 ## Construction
 
-Le projet est construit avec CMake et requiert **Qt 6.10.2 ou supérieur** (pour le module HttpServer).
+Le projet est construit avec CMake et requiert **Qt 6.9.2 ou supérieur** (pour le module HttpServer et le pattern responder).
 
 ### Développement local
 
@@ -30,7 +30,7 @@ cmake --build build
 
 ### Déploiement sur Ubuntu 26.04
 
-Sur Ubuntu 26.04, Qt 6.10.2 est fourni via apt avec le module HttpServer :
+Sur Ubuntu 26.04, Qt 6.9.2 est fourni via apt avec le module HttpServer :
 
 ```bash
 sudo apt-get install -y qt6-base-dev qt6-concurrent-dev qt6-sql-dev libqt6network6 libqt6httpserver6-dev cmake ninja-build
