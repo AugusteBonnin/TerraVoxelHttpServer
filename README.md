@@ -71,9 +71,10 @@ Un schéma simple est le suivant :
 
 - nginx sert les fichiers HTML/CSS/JS depuis un répertoire de pages statiques
 - nginx proxy les routes `/api/`, `/cache/`, `/tiles/` et `/health` vers `127.0.0.1:8080`
+- nginx gère déjà l’HTTPS et la redirection depuis le port 80 vers le port 443
 - TerraVoxelHttpServer continue à gérer la logique métier, les accès base de données, le cache disque et les réponses binaires
 
-Exemple de configuration nginx :
+Exemple de configuration nginx HTTPS/443 :
 
 ```nginx
 upstream terravoxel_backend {

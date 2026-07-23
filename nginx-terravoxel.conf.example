@@ -3,8 +3,12 @@ upstream terravoxel_backend {
 }
 
 server {
-    listen 80;
+    listen 443 ssl http2;
     server_name terravoxel.example.com;
+
+    ssl_certificate     /etc/ssl/certs/terravoxel.crt;
+    ssl_certificate_key /etc/ssl/private/terravoxel.key;
+
     root /var/www/terravoxel/www;
     index index.html;
 
@@ -15,24 +19,34 @@ server {
     location /health {
         proxy_pass http://terravoxel_backend;
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     location /api/ {
         proxy_pass http://terravoxel_backend;
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     location /cache/ {
         proxy_pass http://terravoxel_backend;
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     location /tiles/ {
         proxy_pass http://terravoxel_backend;
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
+}
+
+server {
+    listen 80;
+    server_name terravoxel.example.com;
+    return 301 https://$host$request_uri;
 }
