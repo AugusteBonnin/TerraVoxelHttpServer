@@ -55,6 +55,14 @@ export TERRAVOXEL_HTTP_PORT=8080
 ./build/TerraVoxelHttpServer
 ```
 
+Un script de démarrage est également fourni :
+
+```bash
+./start-terravoxel.sh
+```
+
+Il lance le binaire avec les variables d’environnement utiles, crée un répertoire de cache local si nécessaire et enregistre les logs dans le dossier logs/.
+
 ## Déploiement avec nginx
 
 Dans un déploiement réel, TerraVoxelHttpServer peut être exécuté en arrière-plan sur un port local, tandis qu’un serveur nginx sert les pages statiques du front office et inverse les requêtes vers l’API du service.
