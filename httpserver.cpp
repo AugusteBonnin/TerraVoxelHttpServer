@@ -84,7 +84,7 @@ void HttpServer::configureRoutes()
                        [this](const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            if (!checkRateLimit(request, responder))
                                return;
-                           responder.write(QHttpServerResponse(
+                           responder.sendResponse(QHttpServerResponse(
                                QByteArrayLiteral("text/plain; charset=utf-8"),
                                QByteArrayLiteral("OK\n")));
                        });
@@ -231,10 +231,10 @@ void HttpServer::handleFranceRequest(const QHttpServerRequest &request, QHttpSer
     France value;
     QString error;
     if (!m_repository.loadFrance(&value, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
         return;
     }
-    responder.write(json(value.toJson()));
+    responder.sendResponse(json(value.toJson()));
 }
 
 void HttpServer::handleRegionRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code)
@@ -245,10 +245,10 @@ void HttpServer::handleRegionRequest(const QHttpServerRequest &request, QHttpSer
     Region value;
     QString error;
     if (!m_repository.region(code, &value, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
         return;
     }
-    responder.write(json(value.toJson()));
+    responder.sendResponse(json(value.toJson()));
 }
 
 void HttpServer::handleDepartementRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code)
@@ -259,10 +259,10 @@ void HttpServer::handleDepartementRequest(const QHttpServerRequest &request, QHt
     Departement value;
     QString error;
     if (!m_repository.departement(code, &value, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
         return;
     }
-    responder.write(json(value.toJson()));
+    responder.sendResponse(json(value.toJson()));
 }
 
 void HttpServer::handleEpciRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code)
@@ -273,10 +273,10 @@ void HttpServer::handleEpciRequest(const QHttpServerRequest &request, QHttpServe
     Epci value;
     QString error;
     if (!m_repository.epci(code, &value, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
         return;
     }
-    responder.write(json(value.toJson()));
+    responder.sendResponse(json(value.toJson()));
 }
 
 void HttpServer::handleCommuneRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code)
@@ -287,10 +287,10 @@ void HttpServer::handleCommuneRequest(const QHttpServerRequest &request, QHttpSe
     Commune value;
     QString error;
     if (!m_repository.commune(code, &value, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
         return;
     }
-    responder.write(json(value.toJson()));
+    responder.sendResponse(json(value.toJson()));
 }
 
 void HttpServer::handleMeshRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &type, const QString &code)
@@ -299,8 +299,8 @@ void HttpServer::handleMeshRequest(const QHttpServerRequest &request, QHttpServe
         return;
 
     if (!isKnownMeshType(type)) {
-        responder.write(failure(QStringLiteral("Type de mesh inconnu : %1").arg(type),
-                               QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(QStringLiteral("Type de mesh inconnu : %1").arg(type),
+                                       QHttpServerResponder::StatusCode::NotFound));
         return;
     }
 
@@ -308,21 +308,21 @@ void HttpServer::handleMeshRequest(const QHttpServerRequest &request, QHttpServe
     bool found = false;
     QString error;
     if (!m_repository.trianglesWkb(repositoryMeshType(type), code, &triangles, &found, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
         return;
     }
     if (!found || triangles.isEmpty()) {
-        responder.write(failure(QStringLiteral("Mesh introuvable : %1/%2").arg(type, code),
-                               QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(QStringLiteral("Mesh introuvable : %1/%2").arg(type, code),
+                                       QHttpServerResponder::StatusCode::NotFound));
         return;
     }
 
     QByteArray data;
     if (!m_meshCache.meshData(type, code, triangles, &data, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
         return;
     }
-    responder.write(QHttpServerResponse(QByteArrayLiteral("application/octet-stream"), data));
+    responder.sendResponse(QHttpServerResponse(QByteArrayLiteral("application/octet-stream"), data));
 }
 
 void HttpServer::handleTileRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &sizeMeters, const QString &minX, const QString &minY)
@@ -333,10 +333,10 @@ void HttpServer::handleTileRequest(const QHttpServerRequest &request, QHttpServe
     Tuile value;
     QString error;
     if (!parseTile(sizeMeters, minX, minY, &value, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::BadRequest));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::BadRequest));
         return;
     }
-    responder.write(json(value.toJson(true)));
+    responder.sendResponse(json(value.toJson(true)));
 }
 
 void HttpServer::handleTileAssetRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &sizeMeters, const QString &minX, const QString &minY, const QString &assetName)
@@ -347,7 +347,7 @@ void HttpServer::handleTileAssetRequest(const QHttpServerRequest &request, QHttp
     Tuile value;
     QString error;
     if (!parseTile(sizeMeters, minX, minY, &value, &error)) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::BadRequest));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::BadRequest));
         return;
     }
 
@@ -360,16 +360,16 @@ void HttpServer::handleTileAssetRequest(const QHttpServerRequest &request, QHttp
              || assetName == QStringLiteral("mnt.bil"))
         success = m_tileCache.ensureRaster(value, assetName, &data, &error);
     else {
-        responder.write(failure(QStringLiteral("Ressource de tuile inconnue : %1").arg(assetName),
-                               QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(QStringLiteral("Ressource de tuile inconnue : %1").arg(assetName),
+                                       QHttpServerResponder::StatusCode::NotFound));
         return;
     }
 
     if (!success) {
-        responder.write(failure(error, QHttpServerResponder::StatusCode::BadGateway));
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::BadGateway));
         return;
     }
-    responder.write(QHttpServerResponse(mimeType(assetName), data));
+    responder.sendResponse(QHttpServerResponse(mimeType(assetName), data));
 }
 
 void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &type, const QString &code, const QString &sizeText)
@@ -381,8 +381,8 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
     const qint64 sizeMeters = sizeText.toLongLong(&sizeOk);
     int level = 0;
     if (!sizeOk || !TilePyramid::levelForTileSize(sizeMeters, &level)) {
-        responder.write(failure(QStringLiteral("Taille de tuile invalide"),
-                               QHttpServerResponder::StatusCode::BadRequest));
+        responder.sendResponse(failure(QStringLiteral("Taille de tuile invalide"),
+                                       QHttpServerResponder::StatusCode::BadRequest));
         return;
     }
 
@@ -393,7 +393,7 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
     if (type == QStringLiteral("r") || type == QStringLiteral("regions")) {
         Region entity;
         if (!m_repository.region(code, &entity, &error)) {
-            responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+            responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
         bounds = entity.rectangle();
@@ -401,7 +401,7 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
     } else if (type == QStringLiteral("d") || type == QStringLiteral("departements")) {
         Departement entity;
         if (!m_repository.departement(code, &entity, &error)) {
-            responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+            responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
         bounds = entity.rectangle();
@@ -409,7 +409,7 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
     } else if (type == QStringLiteral("e") || type == QStringLiteral("epci") || type == QStringLiteral("epcis")) {
         Epci entity;
         if (!m_repository.epci(code, &entity, &error)) {
-            responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+            responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
         bounds = entity.rectangle();
@@ -417,14 +417,14 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
     } else if (type == QStringLiteral("c") || type == QStringLiteral("communes")) {
         Commune entity;
         if (!m_repository.commune(code, &entity, &error)) {
-            responder.write(failure(error, QHttpServerResponder::StatusCode::NotFound));
+            responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
         bounds = entity.rectangle();
         name = entity.name();
     } else {
-        responder.write(failure(QStringLiteral("Type d'entité inconnu : %1").arg(type),
-                               QHttpServerResponder::StatusCode::NotFound));
+        responder.sendResponse(failure(QStringLiteral("Type d'entité inconnu : %1").arg(type),
+                                       QHttpServerResponder::StatusCode::NotFound));
         return;
     }
 
@@ -434,7 +434,7 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
     set.setCoverage(TileCoverage::Rectangle);
     set.setLevel(level);
     set.setTiles(TileCoverageCalculator::rectangle(bounds, level));
-    responder.write(json(set.toJson()));
+    responder.sendResponse(json(set.toJson()));
 }
 
 // Helper methods
