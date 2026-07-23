@@ -1,0 +1,35 @@
+# Build artifacts
+/build/
+/build*/
+cmake-build-*/
+out/
+
+# CMake / Qt / compiler outputs
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+compile_commands.json
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.exe
+*.user
+*.autosave
+*.pro.user*
+*.qmake.stash
+moc_*
+uic_*
+ui_*.h
+qrc_*.cpp
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
