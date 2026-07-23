@@ -27,14 +27,24 @@ public:
 
 private:
     void configureRoutes();
-    QHttpServerResponse withRateLimit(const QHttpServerRequest &request,
-                                       const std::function<QHttpServerResponse()> &handler);
+    bool checkRateLimit(const QHttpServerRequest &request,
+                        QHttpServerResponder &responder);
     bool allowRequest(const QHttpServerRequest &request,
                       QString *error,
                       int *retryAfterSeconds = nullptr);
     QString clientKey(const QHttpServerRequest &request) const;
     int rateLimitRequestsPerWindow() const;
     int rateLimitWindowSeconds() const;
+
+    void handleFranceRequest(const QHttpServerRequest &request, QHttpServerResponder &responder);
+    void handleRegionRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code);
+    void handleDepartementRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code);
+    void handleEpciRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code);
+    void handleCommuneRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code);
+    void handleMeshRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &type, const QString &code);
+    void handleTileRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &sizeMeters, const QString &minX, const QString &minY);
+    void handleTileAssetRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &sizeMeters, const QString &minX, const QString &minY, const QString &assetName);
+    void handleEntityTilesRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &type, const QString &code, const QString &sizeMeters);
 
     QHttpServerResponse france();
     QHttpServerResponse region(const QString &code);
