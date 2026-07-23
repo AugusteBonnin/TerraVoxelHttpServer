@@ -51,8 +51,64 @@ export TERRAVOXEL_CACHE_ROOT="$PWD/cache"
 Après la compilation, l’exécutable produit est lancé ainsi :
 
 ```bash
+export TERRAVOXEL_HTTP_PORT=8080
 ./build/TerraVoxelHttpServer
 ```
+
+## Déploiement avec nginx
+
+Dans un déploiement réel, TerraVoxelHttpServer peut être exécuté en arrière-plan sur un port local, tandis qu’un serveur nginx sert les pages statiques du front office et inverse les requêtes vers l’API du service.
+
+Un schéma simple est le suivant :
+
+- nginx sert les fichiers HTML/CSS/JS depuis un répertoire de pages statiques
+- nginx proxy les routes `/api/`, `/cache/`, `/tiles/` et `/health` vers `127.0.0.1:8080`
+- TerraVoxelHttpServer continue à gérer la logique métier, les accès base de données, le cache disque et les réponses binaires
+
+Exemple de configuration nginx :
+
+```nginx
+upstream terravoxel_backend {
+    server 127.0.0.1:8080;
+}
+
+server {
+    listen 80;
+    server_name terravoxel.example.com;
+    root /var/www/terravoxel/www;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /health {
+        proxy_pass http://terravoxel_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /api/ {
+        proxy_pass http://terravoxel_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /cache/ {
+        proxy_pass http://terravoxel_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /tiles/ {
+        proxy_pass http://terravoxel_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+Un exemple complet est disponible dans [nginx-terravoxel.conf.example](nginx-terravoxel.conf.example).
 
 ## Routes principales
 
