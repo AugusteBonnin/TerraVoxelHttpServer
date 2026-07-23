@@ -4,11 +4,13 @@
 #include "tilepyramid.h"
 #include "tileset.h"
 
+#include <QDateTime>
 #include <QHostAddress>
 #include <QHttpServerRequest>
 #include <QHttpServerResponder>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMutexLocker>
 
 namespace {
 
@@ -79,50 +81,77 @@ quint16 HttpServer::port() const
 void HttpServer::configureRoutes()
 {
     m_httpServer.route(QStringLiteral("/health"), QHttpServerRequest::Method::Get,
-                       [] {
-                           return QHttpServerResponse(
-                               QByteArrayLiteral("text/plain; charset=utf-8"),
-                               QByteArrayLiteral("OK\n"));
+                       [this](const QHttpServerRequest &request) {
+                           return withRateLimit(request, [this] {
+                               return QHttpServerResponse(
+                                   QByteArrayLiteral("text/plain; charset=utf-8"),
+                                   QByteArrayLiteral("OK\n"));
+                           });
                        });
 
     m_httpServer.route(QStringLiteral("/api/france"), QHttpServerRequest::Method::Get,
-                       [this] { return france(); });
+                       [this](const QHttpServerRequest &request) {
+                           return withRateLimit(request, [this] { return france(); });
+                       });
     m_httpServer.route(QStringLiteral("/api/r/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QString &code) { return region(code); });
+                       [this](const QHttpServerRequest &request, const QString &code) {
+                           return withRateLimit(request, [this, code] { return region(code); });
+                       });
     m_httpServer.route(QStringLiteral("/api/d/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QString &code) { return departement(code); });
+                       [this](const QHttpServerRequest &request, const QString &code) {
+                           return withRateLimit(request, [this, code] { return departement(code); });
+                       });
     m_httpServer.route(QStringLiteral("/api/e/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QString &code) { return epci(code); });
+                       [this](const QHttpServerRequest &request, const QString &code) {
+                           return withRateLimit(request, [this, code] { return epci(code); });
+                       });
     m_httpServer.route(QStringLiteral("/api/c/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QString &code) { return commune(code); });
+                       [this](const QHttpServerRequest &request, const QString &code) {
+                           return withRateLimit(request, [this, code] { return commune(code); });
+                       });
 
     m_httpServer.route(QStringLiteral("/cache/<arg>/<arg>/mesh.bin"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QString &type, const QString &code) {
-                           return mesh(type, code);
+                       [this](const QHttpServerRequest &request,
+                              const QString &type,
+                              const QString &code) {
+                           return withRateLimit(request, [this, type, code] {
+                               return mesh(type, code);
+                           });
                        });
 
     m_httpServer.route(QStringLiteral("/api/t/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QString &sizeMeters, const QString &minX, const QString &minY) {
-                           return tile(sizeMeters, minX, minY);
+                       [this](const QHttpServerRequest &request,
+                              const QString &sizeMeters,
+                              const QString &minX,
+                              const QString &minY) {
+                           return withRateLimit(request, [this, sizeMeters, minX, minY] {
+                               return tile(sizeMeters, minX, minY);
+                           });
                        });
 
     m_httpServer.route(QStringLiteral("/tiles/<arg>/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QString &sizeMeters,
+                       [this](const QHttpServerRequest &request,
+                              const QString &sizeMeters,
                               const QString &minX,
                               const QString &minY,
                               const QString &assetName) {
-                           return tileAsset(sizeMeters, minX, minY, assetName);
+                           return withRateLimit(request, [this, sizeMeters, minX, minY, assetName] {
+                               return tileAsset(sizeMeters, minX, minY, assetName);
+                           });
                        });
 
     m_httpServer.route(QStringLiteral("/api/tiles/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QString &type,
+                       [this](const QHttpServerRequest &request,
+                              const QString &type,
                               const QString &code,
                               const QString &sizeMeters) {
-                           return entityTiles(type, code, sizeMeters);
+                           return withRateLimit(request, [this, type, code, sizeMeters] {
+                               return entityTiles(type, code, sizeMeters);
+                           });
                        });
 
     m_httpServer.setMissingHandler(
@@ -135,6 +164,76 @@ void HttpServer::configureRoutes()
                     {QStringLiteral("path"), request.url().path()}}),
                 QHttpServerResponder::StatusCode::NotFound);
         });
+}
+
+QHttpServerResponse HttpServer::withRateLimit(const QHttpServerRequest &request,
+                                               const std::function<QHttpServerResponse()> &handler)
+{
+    QString error;
+    int retryAfterSeconds = 0;
+    if (!allowRequest(request, &error, &retryAfterSeconds)) {
+        return json(QJsonObject{{QStringLiteral("success"), false},
+                                {QStringLiteral("error"), error},
+                                {QStringLiteral("retryAfterSeconds"), retryAfterSeconds}},
+                    QHttpServerResponder::StatusCode::TooManyRequests);
+    }
+    return handler();
+}
+
+bool HttpServer::allowRequest(const QHttpServerRequest &request,
+                              QString *error,
+                              int *retryAfterSeconds)
+{
+    const int maxRequests = rateLimitRequestsPerWindow();
+    const int windowSeconds = rateLimitWindowSeconds();
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    const qint64 windowMs = static_cast<qint64>(windowSeconds) * 1000;
+    const QString key = clientKey(request);
+
+    QMutexLocker locker(&m_rateLimitMutex);
+    QList<qint64> &timestamps = m_rateLimitBuckets[key];
+
+    auto it = timestamps.begin();
+    while (it != timestamps.end()) {
+        if (nowMs - *it > windowMs)
+            it = timestamps.erase(it);
+        else
+            ++it;
+    }
+
+    if (timestamps.size() >= maxRequests) {
+        if (error)
+            *error = QStringLiteral("Trop de requêtes, veuillez réessayer plus tard");
+        if (retryAfterSeconds && !timestamps.isEmpty()) {
+            const qint64 oldest = timestamps.first();
+            const qint64 remaining = windowMs - (nowMs - oldest);
+            *retryAfterSeconds = qMax(1, static_cast<int>(remaining / 1000));
+        }
+        return false;
+    }
+
+    timestamps.append(nowMs);
+    return true;
+}
+
+QString HttpServer::clientKey(const QHttpServerRequest &request) const
+{
+    const QHostAddress remoteAddress = request.remoteAddress();
+    return remoteAddress.isNull() ? QStringLiteral("unknown") : remoteAddress.toString();
+}
+
+int HttpServer::rateLimitRequestsPerWindow() const
+{
+    bool ok = false;
+    const int value = qEnvironmentVariableIntValue("TERRAVOXEL_RATE_LIMIT_REQUESTS_PER_WINDOW", &ok);
+    return ok && value > 0 ? value : 120;
+}
+
+int HttpServer::rateLimitWindowSeconds() const
+{
+    bool ok = false;
+    const int value = qEnvironmentVariableIntValue("TERRAVOXEL_RATE_LIMIT_WINDOW_SECONDS", &ok);
+    return ok && value > 0 ? value : 60;
 }
 
 QHttpServerResponse HttpServer::france()

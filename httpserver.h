@@ -6,9 +6,14 @@
 #include "tilecache.h"
 
 #include <QHttpServer>
+#include <QHttpServerRequest>
 #include <QHttpServerResponse>
 #include <QObject>
 #include <QTcpServer>
+#include <QMutex>
+#include <QList>
+#include <QHash>
+#include <functional>
 
 class HttpServer final : public QObject
 {
@@ -22,6 +27,14 @@ public:
 
 private:
     void configureRoutes();
+    QHttpServerResponse withRateLimit(const QHttpServerRequest &request,
+                                       const std::function<QHttpServerResponse()> &handler);
+    bool allowRequest(const QHttpServerRequest &request,
+                      QString *error,
+                      int *retryAfterSeconds = nullptr);
+    QString clientKey(const QHttpServerRequest &request) const;
+    int rateLimitRequestsPerWindow() const;
+    int rateLimitWindowSeconds() const;
 
     QHttpServerResponse france();
     QHttpServerResponse region(const QString &code);
@@ -58,6 +71,8 @@ private:
     TileCache m_tileCache;
     QHttpServer m_httpServer;
     QTcpServer m_tcpServer;
+    mutable QMutex m_rateLimitMutex;
+    QHash<QString, QList<qint64>> m_rateLimitBuckets;
 };
 
 #endif

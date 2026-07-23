@@ -46,6 +46,13 @@ Le répertoire de cache peut être défini ainsi :
 export TERRAVOXEL_CACHE_ROOT="$PWD/cache"
 ```
 
+Un rate limiter simple est également disponible côté serveur Qt. Il peut être configuré avec :
+
+```bash
+export TERRAVOXEL_RATE_LIMIT_REQUESTS_PER_WINDOW=120
+export TERRAVOXEL_RATE_LIMIT_WINDOW_SECONDS=60
+```
+
 ## Exécution
 
 Après la compilation, l’exécutable produit est lancé ainsi :
