@@ -95,50 +95,46 @@ void HttpServer::configureRoutes()
                        });
 
     m_httpServer.route(QStringLiteral("/api/r/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code) {
+                       [this](const QString &code, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleRegionRequest(request, responder, code);
                        });
 
     m_httpServer.route(QStringLiteral("/api/d/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code) {
+                       [this](const QString &code, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleDepartementRequest(request, responder, code);
                        });
 
     m_httpServer.route(QStringLiteral("/api/e/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code) {
+                       [this](const QString &code, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleEpciRequest(request, responder, code);
                        });
 
     m_httpServer.route(QStringLiteral("/api/c/<arg>"), QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &code) {
+                       [this](const QString &code, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleCommuneRequest(request, responder, code);
                        });
 
     m_httpServer.route(QStringLiteral("/cache/<arg>/<arg>/mesh.bin"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder,
-                              const QString &type, const QString &code) {
+                       [this](const QString &type, const QString &code, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleMeshRequest(request, responder, type, code);
                        });
 
     m_httpServer.route(QStringLiteral("/api/t/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder,
-                              const QString &sizeMeters, const QString &minX, const QString &minY) {
+                       [this](const QString &sizeMeters, const QString &minX, const QString &minY, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleTileRequest(request, responder, sizeMeters, minX, minY);
                        });
 
     m_httpServer.route(QStringLiteral("/tiles/<arg>/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder,
-                              const QString &sizeMeters, const QString &minX, const QString &minY, const QString &assetName) {
+                       [this](const QString &sizeMeters, const QString &minX, const QString &minY, const QString &assetName, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleTileAssetRequest(request, responder, sizeMeters, minX, minY, assetName);
                        });
 
     m_httpServer.route(QStringLiteral("/api/tiles/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QHttpServerRequest &request, QHttpServerResponder &responder,
-                              const QString &type, const QString &code, const QString &sizeMeters) {
+                       [this](const QString &type, const QString &code, const QString &sizeMeters, const QHttpServerRequest &request, QHttpServerResponder &responder) {
                            handleEntityTilesRequest(request, responder, type, code, sizeMeters);
                        });
 
