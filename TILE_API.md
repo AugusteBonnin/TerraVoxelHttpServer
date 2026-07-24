@@ -43,7 +43,6 @@ La réponse contient notamment :
 ```json
 {
   "id": "0001000/6300000/725000",
-  "cle": "0001000/6300000/725000",
   "niveau": "0001000",
   "niveauM": 1000,
   "minX": 725000,

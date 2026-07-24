@@ -38,7 +38,6 @@ QJsonObject Tuile::toJson(bool includeChildren) const
 {
     QJsonObject json;
     json.insert(QStringLiteral("id"), key());
-    json.insert(QStringLiteral("cle"), key());
     json.insert(QStringLiteral("niveau"), TilePyramid::sizeKey(size()));
     json.insert(QStringLiteral("niveauM"), size());
     json.insert(QStringLiteral("niveauInterne"), m_level);
