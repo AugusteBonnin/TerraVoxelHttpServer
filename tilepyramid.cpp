@@ -39,8 +39,8 @@ QString TilePyramid::tileKey(const Tuile &tile)
 {
     return QStringLiteral("%1/%2/%3")
         .arg(sizeKey(tile.size()))
-        .arg(tile.xmin())
-        .arg(tile.ymin());
+        .arg(tile.ymin())
+        .arg(tile.xmin());
 }
 
 QString TilePyramid::tileKey(int level, qint64 x, qint64 y)

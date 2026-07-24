@@ -155,11 +155,11 @@ Si un maillage n’est pas déjà présent dans le cache, le serveur le construi
 ### API tuilée
 
 ```text
-GET /api/t/{niveauEnM}/{minX}/{minY}
+GET /api/t/{niveauEnM}/{nord}/{est}
 GET /api/tiles/{type}/{code}/{niveauEnM}
-GET /tiles/{niveauEnM}/{minX}/{minY}/mesh.bin
-GET /tiles/{niveauEnM}/{minX}/{minY}/ortho.jpg
-GET /tiles/{niveauEnM}/{minX}/{minY}/mnt.bin
+GET /tiles/{niveauEnM}/{nord}/{est}/mesh.bin
+GET /tiles/{niveauEnM}/{nord}/{est}/ortho.jpg
+GET /tiles/{niveauEnM}/{nord}/{est}/mnt.bin
 ```
 
 Pour les détails sur les formats et les paramètres attendus, voir les documents suivants :

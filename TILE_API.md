@@ -3,18 +3,18 @@
 L’index public d’une tuile utilise le coin inférieur gauche Lambert-93 :
 
 ```text
-{niveauEnM}/{minX}/{minY}
+{niveauEnM}/{nord}/{est}
 ```
 
 - `niveauEnM` est la longueur du côté du carré en mètres, complétée à gauche par des zéros jusqu’à 7 chiffres ;
-- `minX` est l’abscisse Lambert-93 du bord ouest ;
-- `minY` est l’ordonnée Lambert-93 du bord sud.
+- `nord` est l’ordonnée Lambert-93 du bord sud (`minY`) ;
+- `est` est l’abscisse Lambert-93 du bord ouest (`minX`).
 
 Exemple pour une tuile de 1 000 m dont le coin inférieur gauche est
 `minX = 725000`, `minY = 6300000` :
 
 ```text
-0001000/725000/6300000
+0001000/6300000/725000
 ```
 
 Le modèle C++ utilise directement ces coordonnées :
@@ -29,20 +29,21 @@ ymax = minY + niveauEnM
 ## Métadonnées
 
 ```text
-GET /api/t/{niveauEnM}/{minX}/{minY}
+GET /api/t/{niveauEnM}/{nord}/{est}
 ```
 
 Exemple :
 
 ```text
-GET /api/t/0001000/725000/6300000
+GET /api/t/0001000/6300000/725000
 ```
 
 La réponse contient notamment :
 
 ```json
 {
-  "cle": "0001000/725000/6300000",
+  "id": "0001000/6300000/725000",
+  "cle": "0001000/6300000/725000",
   "niveau": "0001000",
   "niveauM": 1000,
   "minX": 725000,
@@ -55,17 +56,17 @@ La réponse contient notamment :
 ## Ressources
 
 ```text
-GET /tiles/{niveauEnM}/{minX}/{minY}/mesh.bin
-GET /tiles/{niveauEnM}/{minX}/{minY}/ortho.jpg
-GET /tiles/{niveauEnM}/{minX}/{minY}/mnt.bin
+GET /tiles/{niveauEnM}/{nord}/{est}/mesh.bin
+GET /tiles/{niveauEnM}/{nord}/{est}/ortho.jpg
+GET /tiles/{niveauEnM}/{nord}/{est}/mnt.bin
 ```
 
 Exemples :
 
 ```text
-GET /tiles/0001000/725000/6300000/mesh.bin
-GET /tiles/0001000/725000/6300000/ortho.jpg
-GET /tiles/0001000/725000/6300000/mnt.bin
+GET /tiles/0001000/6300000/725000/mesh.bin
+GET /tiles/0001000/6300000/725000/ortho.jpg
+GET /tiles/0001000/6300000/725000/mnt.bin
 ```
 
 - `mesh.bin` utilise le format `TVM1` ;
@@ -97,8 +98,8 @@ Types acceptés : `r`, `regions`, `d`, `departements`, `e`, `epci`, `epcis`, `c`
 cache/
   tiles/
     0001000/
-      725000/
-        6300000/
+      6300000/
+        725000/
           mesh.bin
           ortho.jpg
           mnt.bin

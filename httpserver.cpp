@@ -122,14 +122,14 @@ void HttpServer::configureRoutes()
 
     m_httpServer.route(QStringLiteral("/api/t/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QString &sizeMeters, const QString &minX, const QString &minY, const QHttpServerRequest &request, QHttpServerResponder &responder) {
-                           handleTileRequest(request, responder, sizeMeters, minX, minY);
+                       [this](const QString &sizeMeters, const QString &north, const QString &east, const QHttpServerRequest &request, QHttpServerResponder &responder) {
+                           handleTileRequest(request, responder, sizeMeters, east, north);
                        });
 
     m_httpServer.route(QStringLiteral("/tiles/<arg>/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QString &sizeMeters, const QString &minX, const QString &minY, const QString &assetName, const QHttpServerRequest &request, QHttpServerResponder &responder) {
-                           handleTileAssetRequest(request, responder, sizeMeters, minX, minY, assetName);
+                       [this](const QString &sizeMeters, const QString &north, const QString &east, const QString &assetName, const QHttpServerRequest &request, QHttpServerResponder &responder) {
+                           handleTileAssetRequest(request, responder, sizeMeters, east, north, assetName);
                        });
 
     m_httpServer.route(QStringLiteral("/api/tiles/<arg>/<arg>/<arg>"),
