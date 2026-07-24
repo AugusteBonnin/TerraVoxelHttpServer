@@ -36,6 +36,13 @@ bool MeshSerializer::save(const Mesh &mesh,
                           QString *errorMessage)
 {
     const QByteArray data = serialize(mesh);
+    return save(data, fileName, errorMessage);
+}
+
+bool MeshSerializer::save(const QByteArray &data,
+                          const QString &fileName,
+                          QString *errorMessage)
+{
     if (data.isEmpty()) {
         if (errorMessage)
             *errorMessage = QStringLiteral("La sérialisation du mesh a échoué");

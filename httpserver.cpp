@@ -318,7 +318,7 @@ void HttpServer::handleMeshRequest(const QHttpServerRequest &request, QHttpServe
     }
 
     QByteArray data;
-    if (!m_meshCache.meshData(type, code, triangles, &data, &error)) {
+    if (!m_meshCache.loadOrCreate(type, code, triangles, &data, &error)) {
         responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
         return;
     }

@@ -13,6 +13,9 @@ public:
     static bool save(const Mesh &mesh,
                      const QString &fileName,
                      QString *errorMessage = nullptr);
+    static bool save(const QByteArray &data,
+                     const QString &fileName,
+                     QString *errorMessage = nullptr);
 };
 
 #endif

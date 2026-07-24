@@ -1,12 +1,10 @@
 #include "meshcache.h"
-#include "entity.h"
 #include "mesh.h"
 #include "meshserializer.h"
 #include "wkbreader.h"
 
 #include <QDir>
 #include <QFile>
-#include <QFileInfo>
 
 #include <utility>
 
@@ -38,28 +36,17 @@ QString MeshCache::directory(const QString &type, const QString &code) const
     return QDir(m_cacheRoot).filePath(type + QLatin1Char('/') + code);
 }
 
-QString MeshCache::directory(const Entity &entity) const
-{
-    return QDir(m_cacheRoot).filePath(entity.cacheType() + QLatin1Char('/') + entity.code());
-}
-
 QString MeshCache::meshPath(const QString &type, const QString &code) const
 {
     const QString dir = directory(type, code);
     return dir.isEmpty() ? QString() : QDir(dir).filePath(QStringLiteral("mesh.bin"));
 }
 
-QString MeshCache::url(const Entity &entity) const
-{
-    return QStringLiteral("/cache/%1/%2/mesh.bin")
-        .arg(entity.cacheType(), entity.code());
-}
-
-bool MeshCache::meshData(const QString &type,
-                         const QString &code,
-                         const QByteArray &trianglesWkb,
-                         QByteArray *data,
-                         QString *errorMessage) const
+bool MeshCache::loadOrCreate(const QString &type,
+                             const QString &code,
+                             const QByteArray &trianglesWkb,
+                             QByteArray *data,
+                             QString *errorMessage) const
 {
     if (!data) {
         if (errorMessage)
@@ -86,6 +73,7 @@ bool MeshCache::meshData(const QString &type,
         if (!data->isEmpty())
             return true;
         data->clear();
+        cachedFile.close();
     }
 
     if (trianglesWkb.isEmpty()) {
@@ -110,49 +98,11 @@ bool MeshCache::meshData(const QString &type,
         return false;
     }
 
-    if (!MeshSerializer::save(mesh, path, errorMessage))
-        return false;
-
     *data = MeshSerializer::serialize(mesh);
     if (data->isEmpty()) {
         if (errorMessage)
             *errorMessage = QStringLiteral("La sérialisation du mesh a échoué");
         return false;
     }
-    return true;
-}
-
-bool MeshCache::ensure(Entity &entity, QString *errorMessage) const
-{
-    if (!entity.hasMesh())
-        return true;
-
-    entity.setMeshUrl(url(entity));
-    const QString dir = directory(entity);
-    const QString path = QDir(dir).filePath(QStringLiteral("mesh.bin"));
-
-    if (QFileInfo::exists(path))
-        return true;
-    if (entity.triangles().isEmpty()) {
-        if (errorMessage)
-            *errorMessage = QStringLiteral("Le WKB du mesh %1/%2 est vide")
-                                .arg(entity.cacheType(), entity.code());
-        return false;
-    }
-    if (!QDir().mkpath(dir)) {
-        if (errorMessage)
-            *errorMessage = QStringLiteral("Impossible de créer %1").arg(dir);
-        return false;
-    }
-
-    QVector<QVector<Point2D>> triangles;
-    WkbReader reader(entity.triangles());
-    if (!reader.readTriangles(&triangles, errorMessage))
-        return false;
-
-    Mesh mesh;
-    if (!mesh.build(triangles, errorMessage))
-        return false;
-
-    return MeshSerializer::save(mesh, path, errorMessage);
+    return MeshSerializer::save(*data, path, errorMessage);
 }
