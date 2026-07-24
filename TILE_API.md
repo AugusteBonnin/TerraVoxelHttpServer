@@ -10,6 +10,10 @@ L’index public d’une tuile utilise le coin inférieur gauche Lambert-93 :
 - `nord` est l’ordonnée Lambert-93 du bord sud (`minY`) ;
 - `est` est l’abscisse Lambert-93 du bord ouest (`minX`).
 
+Les niveaux acceptés sont des longueurs entières en mètres :
+`125`, `250`, `500`, `1000`, puis chaque niveau doublé jusqu’à `1024000`.
+Il n’existe plus de niveau interne exprimé sous forme d’exposant.
+
 Exemple pour une tuile de 1 000 m dont le coin inférieur gauche est
 `minX = 725000`, `minY = 6300000` :
 
@@ -43,8 +47,7 @@ La réponse contient notamment :
 ```json
 {
   "id": "0001000/6300000/725000",
-  "niveau": "0001000",
-  "niveauM": 1000,
+  "niveau": 1000,
   "minX": 725000,
   "minY": 6300000,
   "est": 725000,

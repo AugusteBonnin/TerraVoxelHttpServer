@@ -1,33 +1,12 @@
 #include "tilepyramid.h"
 
-#include <stdexcept>
-
-void TilePyramid::validateLevel(int level)
+bool TilePyramid::isValidLevel(qint64 levelMeters)
 {
-    if (level < Tuile::MinimumLevel || level > Tuile::MaximumLevel)
-        throw std::out_of_range("Tile level must be between -3 and 10");
-}
-
-qint64 TilePyramid::tileSize(int level)
-{
-    validateLevel(level);
-    if (level >= 0)
-        return Tuile::BaseSizeMeters << level;
-    return Tuile::BaseSizeMeters >> (-level);
-}
-
-bool TilePyramid::levelForTileSize(qint64 sizeMeters, int *level)
-{
-    for (int candidate = Tuile::MinimumLevel;
-         candidate <= Tuile::MaximumLevel;
-         ++candidate) {
-        if (tileSize(candidate) == sizeMeters) {
-            if (level)
-                *level = candidate;
-            return true;
-        }
-    }
-    return false;
+    if (levelMeters < Tuile::MinimumLevel || levelMeters > Tuile::MaximumLevel)
+        return false;
+    return levelMeters % Tuile::MinimumLevel == 0
+        && ((levelMeters / Tuile::MinimumLevel)
+            & ((levelMeters / Tuile::MinimumLevel) - 1)) == 0;
 }
 
 QString TilePyramid::sizeKey(qint64 sizeMeters)
@@ -43,7 +22,7 @@ QString TilePyramid::tileKey(const Tuile &tile)
         .arg(tile.xmin());
 }
 
-QString TilePyramid::tileKey(int level, qint64 x, qint64 y)
+QString TilePyramid::tileKey(qint64 level, qint64 x, qint64 y)
 {
     return tileKey(Tuile(level, x, y));
 }
@@ -72,7 +51,7 @@ Tuile TilePyramid::child(const Tuile &parent, Tuile::ChildPosition position)
     if (!parent.canHaveChildren())
         return {};
 
-    const int childLevel = parent.level() - 1;
+    const qint64 childLevel = parent.level() / 2;
     const qint64 parentSize = parent.size();
     const qint64 childSize = parentSize / 2;
     qint64 childX = parent.x();
@@ -113,8 +92,8 @@ Tuile TilePyramid::gridParent(const Tuile &tile)
     if (!hasParent(tile))
         return {};
 
-    const int parentLevel = tile.level() + 1;
-    const qint64 parentSize = tileSize(parentLevel);
+    const qint64 parentLevel = tile.level() * 2;
+    const qint64 parentSize = parentLevel;
     auto floorMultiple = [](qint64 value, qint64 divisor) {
         qint64 quotient = value / divisor;
         qint64 remainder = value % divisor;

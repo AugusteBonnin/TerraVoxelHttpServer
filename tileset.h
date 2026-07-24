@@ -17,9 +17,8 @@ public:
     void setName(const QString &name);
     TileCoverage coverage() const;
     void setCoverage(TileCoverage coverage);
-    int level() const;
-    void setLevel(int level);
-    qint64 tileSize() const;
+    qint64 level() const;
+    void setLevel(qint64 level);
     const QVector<Tuile> &tiles() const;
     QVector<Tuile> &tiles();
     void setTiles(const QVector<Tuile> &tiles);
@@ -36,7 +35,7 @@ private:
     QString m_id;
     QString m_name;
     TileCoverage m_coverage = TileCoverage::Contour;
-    int m_level = 0;
+    qint64 m_level = 0;
     QVector<Tuile> m_tiles;
     QByteArray m_geometryWkb;
     int m_srid = 2154;

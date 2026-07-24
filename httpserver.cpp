@@ -379,8 +379,7 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
 
     bool sizeOk = false;
     const qint64 sizeMeters = sizeText.toLongLong(&sizeOk);
-    int level = 0;
-    if (!sizeOk || !TilePyramid::levelForTileSize(sizeMeters, &level)) {
+    if (!sizeOk || !TilePyramid::isValidLevel(sizeMeters)) {
         responder.sendResponse(failure(QStringLiteral("Taille de tuile invalide"),
                                        QHttpServerResponder::StatusCode::BadRequest));
         return;
@@ -432,8 +431,8 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
     set.setId(QStringLiteral("%1-%2-%3m").arg(type, code).arg(sizeMeters));
     set.setName(name);
     set.setCoverage(TileCoverage::Rectangle);
-    set.setLevel(level);
-    set.setTiles(TileCoverageCalculator::rectangle(bounds, level));
+    set.setLevel(sizeMeters);
+    set.setTiles(TileCoverageCalculator::rectangle(bounds, sizeMeters));
     responder.sendResponse(json(set.toJson()));
 }
 
@@ -458,14 +457,13 @@ bool HttpServer::parseTile(const QString &sizeText,
         return false;
     }
 
-    int level = 0;
-    if (!TilePyramid::levelForTileSize(sizeMeters, &level)) {
+    if (!TilePyramid::isValidLevel(sizeMeters)) {
         if (error)
             *error = QStringLiteral("Taille de tuile non prise en charge : %1 m").arg(sizeMeters);
         return false;
     }
 
-    const Tuile candidate(level, minX, minY);
+    const Tuile candidate(sizeMeters, minX, minY);
     if (!candidate.isValid()) {
         if (error)
             *error = QStringLiteral("Coordonnées minX/minY non alignées sur la grille de %1 m")

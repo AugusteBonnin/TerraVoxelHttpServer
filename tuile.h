@@ -8,9 +8,8 @@
 class Tuile
 {
 public:
-    static constexpr int MinimumLevel = -3;
-    static constexpr int MaximumLevel = 10;
-    static constexpr qint64 BaseSizeMeters = 1000;
+    static constexpr qint64 MinimumLevel = 125;
+    static constexpr qint64 MaximumLevel = 1024000;
 
     enum class ChildPosition
     {
@@ -22,13 +21,13 @@ public:
     };
 
     Tuile() = default;
-    Tuile(int level, qint64 x, qint64 y);
+    Tuile(qint64 level, qint64 x, qint64 y);
 
     bool isValid() const;
-    int level() const;
+    qint64 level() const;
     qint64 x() const;
     qint64 y() const;
-    void setLevel(int level);
+    void setLevel(qint64 level);
     void setX(qint64 x);
     void setY(qint64 y);
 
@@ -48,7 +47,7 @@ public:
     bool operator==(const Tuile &other) const;
 
 private:
-    int m_level = 0;
+    qint64 m_level = 0;
     qint64 m_x = 0;
     qint64 m_y = 0;
 };

@@ -3,27 +3,27 @@
 
 #include <QJsonArray>
 
-Tuile::Tuile(int level, qint64 x, qint64 y)
+Tuile::Tuile(qint64 level, qint64 x, qint64 y)
     : m_level(level), m_x(x), m_y(y)
 {
 }
 
 bool Tuile::isValid() const
 {
-    if (m_level < MinimumLevel || m_level > MaximumLevel)
+    if (!TilePyramid::isValidLevel(m_level))
         return false;
     const qint64 tileSize = size();
     return tileSize > 0 && m_x % tileSize == 0 && m_y % tileSize == 0;
 }
 
-int Tuile::level() const { return m_level; }
+qint64 Tuile::level() const { return m_level; }
 qint64 Tuile::x() const { return m_x; }
 qint64 Tuile::y() const { return m_y; }
-void Tuile::setLevel(int level) { m_level = level; }
+void Tuile::setLevel(qint64 level) { m_level = level; }
 void Tuile::setX(qint64 x) { m_x = x; }
 void Tuile::setY(qint64 y) { m_y = y; }
 
-qint64 Tuile::size() const { return TilePyramid::tileSize(m_level); }
+qint64 Tuile::size() const { return m_level; }
 qint64 Tuile::xmin() const { return m_x; }
 qint64 Tuile::ymin() const { return m_y; }
 qint64 Tuile::xmax() const { return m_x + size(); }
@@ -38,14 +38,11 @@ QJsonObject Tuile::toJson(bool includeChildren) const
 {
     QJsonObject json;
     json.insert(QStringLiteral("id"), key());
-    json.insert(QStringLiteral("niveau"), TilePyramid::sizeKey(size()));
-    json.insert(QStringLiteral("niveauM"), size());
-    json.insert(QStringLiteral("niveauInterne"), m_level);
+    json.insert(QStringLiteral("niveau"), m_level);
     json.insert(QStringLiteral("minX"), xmin());
     json.insert(QStringLiteral("minY"), ymin());
     json.insert(QStringLiteral("est"), xmin());
     json.insert(QStringLiteral("nord"), ymin());
-    json.insert(QStringLiteral("taille"), size());
     json.insert(QStringLiteral("xmin"), xmin());
     json.insert(QStringLiteral("ymin"), ymin());
     json.insert(QStringLiteral("xmax"), xmax());

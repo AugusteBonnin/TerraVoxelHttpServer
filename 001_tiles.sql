@@ -17,17 +17,23 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS tuile
 (
-    niveau smallint NOT NULL CHECK (niveau BETWEEN -3 AND 10),
+    niveau integer NOT NULL CHECK (
+        niveau IN (125,250,500,1000,2000,4000,8000,16000,32000,64000,
+                   128000,256000,512000,1024000)
+    ),
     x bigint NOT NULL,
     y bigint NOT NULL,
-    cle text GENERATED ALWAYS AS (niveau::text || '/' || x::text || '/' || y::text) STORED,
+    id text GENERATED ALWAYS AS
+    (
+        lpad(niveau::text, 7, '0') || '/' || y::text || '/' || x::text
+    ) STORED,
     geometrie geometry(Polygon,2154) GENERATED ALWAYS AS
     (
         ST_MakeEnvelope(
             x::double precision,
             y::double precision,
-            x::double precision + 1000.0 * power(2.0,niveau::double precision),
-            y::double precision + 1000.0 * power(2.0,niveau::double precision),
+            x::double precision + niveau::double precision,
+            y::double precision + niveau::double precision,
             2154
         )
     ) STORED,
@@ -35,7 +41,7 @@ CREATE TABLE IF NOT EXISTS tuile
     PRIMARY KEY(niveau,x,y)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS tuile_cle_idx ON tuile(cle);
+CREATE UNIQUE INDEX IF NOT EXISTS tuile_id_idx ON tuile(id);
 CREATE INDEX IF NOT EXISTS tuile_geometrie_idx ON tuile USING gist(geometrie);
 
 CREATE TABLE IF NOT EXISTS jeu_tuiles
@@ -45,7 +51,10 @@ CREATE TABLE IF NOT EXISTS jeu_tuiles
     code_entite varchar(32) NOT NULL,
     nom text,
     couverture couverture_tuile NOT NULL,
-    niveau smallint NOT NULL CHECK (niveau BETWEEN -3 AND 10),
+    niveau integer NOT NULL CHECK (
+        niveau IN (125,250,500,1000,2000,4000,8000,16000,32000,64000,
+                   128000,256000,512000,1024000)
+    ),
     geometrie geometry(Geometry,2154),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -61,7 +70,10 @@ CREATE INDEX IF NOT EXISTS jeu_tuiles_geometrie_idx ON jeu_tuiles USING gist(geo
 CREATE TABLE IF NOT EXISTS jeu_tuiles_element
 (
     jeu_tuiles_id uuid NOT NULL REFERENCES jeu_tuiles(id) ON DELETE CASCADE,
-    niveau smallint NOT NULL CHECK (niveau BETWEEN -3 AND 10),
+    niveau integer NOT NULL CHECK (
+        niveau IN (125,250,500,1000,2000,4000,8000,16000,32000,64000,
+                   128000,256000,512000,1024000)
+    ),
     x bigint NOT NULL,
     y bigint NOT NULL,
     taux_couverture double precision NOT NULL DEFAULT 1.0 CHECK (taux_couverture BETWEEN 0.0 AND 1.0),
@@ -73,7 +85,7 @@ CREATE INDEX IF NOT EXISTS jeu_tuiles_element_tuile_idx ON jeu_tuiles_element(ni
 
 CREATE OR REPLACE FUNCTION check_jeu_tuiles_element_level()
 RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE expected_level smallint;
+DECLARE expected_level integer;
 BEGIN
     SELECT niveau INTO expected_level FROM jeu_tuiles WHERE id = NEW.jeu_tuiles_id;
     IF expected_level IS NULL THEN
