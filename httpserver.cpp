@@ -304,21 +304,33 @@ void HttpServer::handleMeshRequest(const QHttpServerRequest &request, QHttpServe
         return;
     }
 
-    QByteArray triangles;
-    bool found = false;
+    QByteArray data;
+    bool cached = false;
     QString error;
-    if (!m_repository.trianglesWkb(repositoryMeshType(type), code, &triangles, &found, &error)) {
+    if (!m_meshCache.load(type, code, &data, &cached, &error)) {
         responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
         return;
     }
-    if (!found || triangles.isEmpty()) {
+    if (cached) {
+        responder.sendResponse(
+            QHttpServerResponse(QByteArrayLiteral("application/octet-stream"), data));
+        return;
+    }
+
+    QByteArray triangles;
+    bool entityFound = false;
+    if (!m_repository.trianglesWkb(
+            repositoryMeshType(type), code, &triangles, &entityFound, &error)) {
+        responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
+        return;
+    }
+    if (!entityFound || triangles.isEmpty()) {
         responder.sendResponse(failure(QStringLiteral("Mesh introuvable : %1/%2").arg(type, code),
                                        QHttpServerResponder::StatusCode::NotFound));
         return;
     }
 
-    QByteArray data;
-    if (!m_meshCache.loadOrCreate(type, code, triangles, &data, &error)) {
+    if (!m_meshCache.create(type, code, triangles, &data, &error)) {
         responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::InternalServerError));
         return;
     }

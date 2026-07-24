@@ -51,8 +51,6 @@ EntityBounds Entity::rectangle() const { return m_rectangle; }
 void Entity::setRectangle(const EntityBounds &value) { m_rectangle = value; }
 EntityBounds Entity::square() const { return m_square; }
 void Entity::setSquare(const EntityBounds &value) { m_square = value; }
-QByteArray Entity::triangles() const { return m_triangles; }
-void Entity::setTriangles(const QByteArray &value) { m_triangles = value; }
 QString Entity::meshUrl() const { return m_meshUrl; }
 void Entity::setMeshUrl(const QString &value) { m_meshUrl = value; }
 QString Entity::orthoUrl() const { return m_orthoUrl; }
@@ -63,19 +61,13 @@ QJsonArray Entity::children() const { return m_children; }
 void Entity::setChildren(const QJsonArray &value) { m_children = value; }
 void Entity::addChild(const QJsonObject &value) { m_children.append(value); }
 
-void Entity::readCommonColumns(const QSqlQuery &query,
-                               int firstColumn,
-                               bool withTriangles)
+void Entity::readCommonColumns(const QSqlQuery &query, int firstColumn)
 {
     setCode(query.value(firstColumn).toString());
     setName(query.value(firstColumn + 1).toString());
     setUpperName(query.value(firstColumn + 2).toString());
 
-    const int geometryColumn = firstColumn + 3;
-    if (withTriangles)
-        setTriangles(query.value(geometryColumn).toByteArray());
-
-    const int rectangleColumn = geometryColumn + (withTriangles ? 1 : 0);
+    const int rectangleColumn = firstColumn + 3;
     setRectangle(EntityBounds::fromQuery(query, rectangleColumn));
     setSquare(EntityBounds::fromQuery(query, rectangleColumn + 4));
 }

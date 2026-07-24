@@ -1,7 +1,6 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-#include <QByteArray>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
@@ -46,9 +45,6 @@ public:
     EntityBounds square() const;
     void setSquare(const EntityBounds &square);
 
-    QByteArray triangles() const;
-    void setTriangles(const QByteArray &triangles);
-
     QString meshUrl() const;
     void setMeshUrl(const QString &meshUrl);
 
@@ -62,9 +58,7 @@ public:
     void setChildren(const QJsonArray &children);
     void addChild(const QJsonObject &child);
 
-    void readCommonColumns(const QSqlQuery &query,
-                           int firstColumn = 0,
-                           bool withTriangles = true);
+    void readCommonColumns(const QSqlQuery &query, int firstColumn = 0);
 
     virtual QJsonObject toJson(bool includeChildren = true) const;
 
@@ -75,7 +69,6 @@ private:
     QString m_upperName;
     EntityBounds m_rectangle;
     EntityBounds m_square;
-    QByteArray m_triangles;
     QString m_meshUrl;
     QString m_orthoUrl;
     QString m_mntUrl;

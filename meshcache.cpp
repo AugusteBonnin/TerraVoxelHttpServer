@@ -42,11 +42,47 @@ QString MeshCache::meshPath(const QString &type, const QString &code) const
     return dir.isEmpty() ? QString() : QDir(dir).filePath(QStringLiteral("mesh.bin"));
 }
 
-bool MeshCache::loadOrCreate(const QString &type,
-                             const QString &code,
-                             const QByteArray &trianglesWkb,
-                             QByteArray *data,
-                             QString *errorMessage) const
+bool MeshCache::load(const QString &type,
+                     const QString &code,
+                     QByteArray *data,
+                     bool *found,
+                     QString *errorMessage) const
+{
+    if (data)
+        data->clear();
+    if (found)
+        *found = false;
+    if (!data || !found) {
+        if (errorMessage)
+            *errorMessage = QStringLiteral("Paramètre de sortie absent");
+        return false;
+    }
+
+    const QString path = meshPath(type, code);
+    if (path.isEmpty()) {
+        if (errorMessage)
+            *errorMessage = QStringLiteral("Type ou code de mesh invalide");
+        return false;
+    }
+
+    QFile cachedFile(path);
+    if (!cachedFile.exists())
+        return true;
+    if (!cachedFile.open(QIODevice::ReadOnly)) {
+        if (errorMessage)
+            *errorMessage = cachedFile.errorString();
+        return false;
+    }
+    *data = cachedFile.readAll();
+    *found = !data->isEmpty();
+    return true;
+}
+
+bool MeshCache::create(const QString &type,
+                       const QString &code,
+                       const QByteArray &trianglesWkb,
+                       QByteArray *data,
+                       QString *errorMessage) const
 {
     if (!data) {
         if (errorMessage)
@@ -61,21 +97,6 @@ bool MeshCache::loadOrCreate(const QString &type,
             *errorMessage = QStringLiteral("Type ou code de mesh invalide");
         return false;
     }
-
-    QFile cachedFile(path);
-    if (cachedFile.exists()) {
-        if (!cachedFile.open(QIODevice::ReadOnly)) {
-            if (errorMessage)
-                *errorMessage = cachedFile.errorString();
-            return false;
-        }
-        *data = cachedFile.readAll();
-        if (!data->isEmpty())
-            return true;
-        data->clear();
-        cachedFile.close();
-    }
-
     if (trianglesWkb.isEmpty()) {
         if (errorMessage)
             *errorMessage = QStringLiteral("Le WKB du mesh %1/%2 est vide").arg(type, code);

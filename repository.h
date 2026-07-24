@@ -47,7 +47,7 @@ public:
                       QString *error = nullptr) const;
 
 private:
-    static QString commonColumns(const QString &, bool);
+    static QString commonColumns(const QString &);
     static QString meshUrl(const Entity &);
     static QJsonObject childJson(const Entity &);
     static bool meshTable(const QString &type,
