@@ -83,14 +83,29 @@ retournement vertical n’est effectué lors de la mise en cache.
 ## Couverture d’une entité
 
 ```text
-GET /api/tiles/{type}/{code}/{niveauEnM}
+GET /api/tiles/{type}/{code}/{couverture}/{niveauEnM}
 ```
 
-Exemple :
+Couvertures acceptées :
 
 ```text
-GET /api/tiles/c/34036/0001000
+rectangle
+carre
+contour
 ```
+
+Exemples :
+
+```text
+GET /api/tiles/c/34036/rectangle/0001000
+GET /api/tiles/c/34036/carre/0001000
+GET /api/tiles/c/34036/contour/0001000
+```
+
+La couverture `rectangle` utilise le rectangle englobant de l’entité.
+La couverture `carre` utilise son carré englobant. La couverture `contour`
+part du TileSet carré, puis ne conserve que les tuiles qui intersectent la
+géométrie réelle de l’entité dans PostGIS.
 
 Types acceptés : `r`, `regions`, `d`, `departements`, `e`, `epci`, `epcis`, `c`, `communes`.
 

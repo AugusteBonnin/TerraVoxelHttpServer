@@ -132,10 +132,10 @@ void HttpServer::configureRoutes()
                            handleTileAssetRequest(request, responder, sizeMeters, east, north, assetName);
                        });
 
-    m_httpServer.route(QStringLiteral("/api/tiles/<arg>/<arg>/<arg>"),
+    m_httpServer.route(QStringLiteral("/api/tiles/<arg>/<arg>/<arg>/<arg>"),
                        QHttpServerRequest::Method::Get,
-                       [this](const QString &type, const QString &code, const QString &sizeMeters, const QHttpServerRequest &request, QHttpServerResponder &responder) {
-                           handleEntityTilesRequest(request, responder, type, code, sizeMeters);
+                       [this](const QString &type, const QString &code, const QString &coverage, const QString &sizeMeters, const QHttpServerRequest &request, QHttpServerResponder &responder) {
+                           handleEntityTilesRequest(request, responder, type, code, coverage, sizeMeters);
                        });
 
     m_httpServer.setMissingHandler(
@@ -384,7 +384,12 @@ void HttpServer::handleTileAssetRequest(const QHttpServerRequest &request, QHttp
     responder.sendResponse(QHttpServerResponse(mimeType(assetName), data));
 }
 
-void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHttpServerResponder &responder, const QString &type, const QString &code, const QString &sizeText)
+void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request,
+                                          QHttpServerResponder &responder,
+                                          const QString &type,
+                                          const QString &code,
+                                          const QString &coverageText,
+                                          const QString &sizeText)
 {
     if (!checkRateLimit(request, responder))
         return;
@@ -397,8 +402,21 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
         return;
     }
 
-    EntityBounds bounds;
+    const std::optional<TileCoverage> coverage = tileCoverageFromString(coverageText);
+    if (!coverage
+        || (*coverage != TileCoverage::Rectangle
+            && *coverage != TileCoverage::Square
+            && *coverage != TileCoverage::Contour)) {
+        responder.sendResponse(
+            failure(QStringLiteral("Couverture inconnue : %1").arg(coverageText),
+                    QHttpServerResponder::StatusCode::BadRequest));
+        return;
+    }
+
+    EntityBounds rectangleBounds;
+    EntityBounds squareBounds;
     QString name;
+    QString repositoryType;
     QString error;
 
     if (type == QStringLiteral("r") || type == QStringLiteral("regions")) {
@@ -407,44 +425,70 @@ void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request, QHt
             responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
-        bounds = entity.rectangle();
+        rectangleBounds = entity.rectangle();
+        squareBounds = entity.square();
         name = entity.name();
+        repositoryType = QStringLiteral("regions");
     } else if (type == QStringLiteral("d") || type == QStringLiteral("departements")) {
         Departement entity;
         if (!m_repository.departement(code, &entity, &error)) {
             responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
-        bounds = entity.rectangle();
+        rectangleBounds = entity.rectangle();
+        squareBounds = entity.square();
         name = entity.name();
+        repositoryType = QStringLiteral("departements");
     } else if (type == QStringLiteral("e") || type == QStringLiteral("epci") || type == QStringLiteral("epcis")) {
         Epci entity;
         if (!m_repository.epci(code, &entity, &error)) {
             responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
-        bounds = entity.rectangle();
+        rectangleBounds = entity.rectangle();
+        squareBounds = entity.square();
         name = entity.name();
+        repositoryType = QStringLiteral("epcis");
     } else if (type == QStringLiteral("c") || type == QStringLiteral("communes")) {
         Commune entity;
         if (!m_repository.commune(code, &entity, &error)) {
             responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::NotFound));
             return;
         }
-        bounds = entity.rectangle();
+        rectangleBounds = entity.rectangle();
+        squareBounds = entity.square();
         name = entity.name();
+        repositoryType = QStringLiteral("communes");
     } else {
         responder.sendResponse(failure(QStringLiteral("Type d'entité inconnu : %1").arg(type),
                                        QHttpServerResponder::StatusCode::NotFound));
         return;
     }
 
+    QVector<Tuile> tiles;
+    if (*coverage == TileCoverage::Rectangle) {
+        tiles = TileCoverageCalculator::rectangle(rectangleBounds, sizeMeters);
+    } else {
+        const QVector<Tuile> squareTiles =
+            TileCoverageCalculator::rectangle(squareBounds, sizeMeters);
+        if (*coverage == TileCoverage::Square) {
+            tiles = squareTiles;
+        } else if (!m_repository.contourTiles(
+                       repositoryType, code, squareTiles, &tiles, &error)) {
+            responder.sendResponse(
+                failure(error, QHttpServerResponder::StatusCode::InternalServerError));
+            return;
+        }
+    }
+
     TileSet set;
-    set.setId(QStringLiteral("%1-%2-%3m").arg(type, code).arg(sizeMeters));
+    set.setId(QStringLiteral("%1-%2-%3-%4m")
+                  .arg(type, code, tileCoverageToString(*coverage))
+                  .arg(sizeMeters));
     set.setName(name);
-    set.setCoverage(TileCoverage::Rectangle);
+    set.setCoverage(*coverage);
     set.setLevel(sizeMeters);
-    set.setTiles(TileCoverageCalculator::rectangle(bounds, sizeMeters));
+    set.setTiles(tiles);
     responder.sendResponse(json(set.toJson()));
 }
 

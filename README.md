@@ -156,7 +156,7 @@ Si un maillage n’est pas déjà présent dans le cache, le serveur le construi
 
 ```text
 GET /api/t/{niveauEnM}/{nord}/{est}
-GET /api/tiles/{type}/{code}/{niveauEnM}
+GET /api/tiles/{type}/{code}/{couverture}/{niveauEnM}
 GET /tiles/{niveauEnM}/{nord}/{est}/mesh.bin
 GET /tiles/{niveauEnM}/{nord}/{est}/ortho.jpg
 GET /tiles/{niveauEnM}/{nord}/{est}/mnt.bin

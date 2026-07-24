@@ -112,3 +112,91 @@ bool Repository::trianglesWkb(const QString &type,
     *wkb = query.value(0).toByteArray();
     return true;
 }
+
+bool Repository::contourTiles(const QString &type,
+                              const QString &code,
+                              const QVector<Tuile> &squareTiles,
+                              QVector<Tuile> *tiles,
+                              QString *error) const
+{
+    if (tiles)
+        tiles->clear();
+    if (!tiles) {
+        setError(error, QStringLiteral("Paramètre de sortie absent"));
+        return false;
+    }
+    if (squareTiles.isEmpty())
+        return true;
+    if (!ensureOpen(error))
+        return false;
+
+    QString tableName;
+    QString codeColumn;
+    if (!meshTable(type, &tableName, &codeColumn)) {
+        setError(error, QStringLiteral("Type d'entité inconnu : %1").arg(type));
+        return false;
+    }
+
+    const qint64 level = squareTiles.first().level();
+    qint64 firstEast = squareTiles.first().x();
+    qint64 lastEast = firstEast;
+    qint64 firstNorth = squareTiles.first().y();
+    qint64 lastNorth = firstNorth;
+    for (const Tuile &tile : squareTiles) {
+        if (tile.level() != level) {
+            setError(error, QStringLiteral("Le TileSet carré contient plusieurs niveaux"));
+            return false;
+        }
+        firstEast = qMin(firstEast, tile.x());
+        lastEast = qMax(lastEast, tile.x());
+        firstNorth = qMin(firstNorth, tile.y());
+        lastNorth = qMax(lastNorth, tile.y());
+    }
+
+    const QString sql = QStringLiteral(
+        "WITH candidates AS ("
+        " SELECT east.value AS east, north.value AS north"
+        " FROM generate_series(CAST(:firstEast AS bigint),"
+        "                      CAST(:lastEast AS bigint),"
+        "                      CAST(:eastStep AS bigint)) AS east(value)"
+        " CROSS JOIN generate_series(CAST(:firstNorth AS bigint),"
+        "                            CAST(:lastNorth AS bigint),"
+        "                            CAST(:northStep AS bigint)) AS north(value)"
+        ")"
+        " SELECT candidates.east, candidates.north"
+        " FROM candidates"
+        " JOIN %1 entity ON entity.%2 = :code"
+        " WHERE ST_Intersects("
+        "   entity.triangles,"
+        "   ST_MakeEnvelope(candidates.east::double precision,"
+        "                   candidates.north::double precision,"
+        "                   (candidates.east + :eastSize)::double precision,"
+        "                   (candidates.north + :northSize)::double precision,"
+        "                   2154)"
+        " )"
+        " ORDER BY candidates.north, candidates.east")
+                            .arg(tableName, codeColumn);
+
+    QSqlQuery query(m_database);
+    if (!query.prepare(sql)) {
+        setError(error, query.lastError().text());
+        return false;
+    }
+    query.bindValue(QStringLiteral(":firstEast"), firstEast);
+    query.bindValue(QStringLiteral(":lastEast"), lastEast);
+    query.bindValue(QStringLiteral(":eastStep"), level);
+    query.bindValue(QStringLiteral(":firstNorth"), firstNorth);
+    query.bindValue(QStringLiteral(":lastNorth"), lastNorth);
+    query.bindValue(QStringLiteral(":northStep"), level);
+    query.bindValue(QStringLiteral(":eastSize"), level);
+    query.bindValue(QStringLiteral(":northSize"), level);
+    query.bindValue(QStringLiteral(":code"), code);
+    if (!query.exec()) {
+        setError(error, query.lastError().text());
+        return false;
+    }
+
+    while (query.next())
+        tiles->append(Tuile(level, query.value(0).toLongLong(), query.value(1).toLongLong()));
+    return true;
+}

@@ -6,6 +6,7 @@
 #include "departement.h"
 #include "epci.h"
 #include "commune.h"
+#include "tuile.h"
 
 #include <QByteArray>
 #include <QSqlDatabase>
@@ -44,6 +45,11 @@ public:
                       const QString &code,
                       QByteArray *wkb,
                       bool *found,
+                      QString *error = nullptr) const;
+    bool contourTiles(const QString &type,
+                      const QString &code,
+                      const QVector<Tuile> &squareTiles,
+                      QVector<Tuile> *tiles,
                       QString *error = nullptr) const;
 
 private:
