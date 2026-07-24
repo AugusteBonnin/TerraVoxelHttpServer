@@ -53,10 +53,6 @@ EntityBounds Entity::square() const { return m_square; }
 void Entity::setSquare(const EntityBounds &value) { m_square = value; }
 QString Entity::meshUrl() const { return m_meshUrl; }
 void Entity::setMeshUrl(const QString &value) { m_meshUrl = value; }
-QString Entity::orthoUrl() const { return m_orthoUrl; }
-void Entity::setOrthoUrl(const QString &value) { m_orthoUrl = value; }
-QString Entity::mntUrl() const { return m_mntUrl; }
-void Entity::setMntUrl(const QString &value) { m_mntUrl = value; }
 QJsonArray Entity::children() const { return m_children; }
 void Entity::setChildren(const QJsonArray &value) { m_children = value; }
 void Entity::addChild(const QJsonObject &value) { m_children.append(value); }
@@ -86,10 +82,6 @@ QJsonObject Entity::toJson(bool includeChildren) const
         object.insert(QStringLiteral("code_parent"), m_parentCode);
     if (!m_meshUrl.isEmpty())
         object.insert(QStringLiteral("mesh"), m_meshUrl);
-    if (!m_orthoUrl.isEmpty())
-        object.insert(QStringLiteral("ortho"), m_orthoUrl);
-    if (!m_mntUrl.isEmpty())
-        object.insert(QStringLiteral("mnt"), m_mntUrl);
     if (includeChildren)
         object.insert(QStringLiteral("enfants"), m_children);
 

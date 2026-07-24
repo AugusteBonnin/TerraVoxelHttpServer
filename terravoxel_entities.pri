@@ -10,7 +10,6 @@ HEADERS += \
     $$PWD/mesh.h \
     $$PWD/meshserializer.h \
     $$PWD/meshcache.h \
-    $$PWD/rastercache.h \
     $$PWD/repository.h
 
 SOURCES += \
@@ -25,5 +24,4 @@ SOURCES += \
     $$PWD/mesh.cpp \
     $$PWD/meshserializer.cpp \
     $$PWD/meshcache.cpp \
-    $$PWD/rastercache.cpp \
     $$PWD/repository.cpp

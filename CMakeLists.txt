@@ -40,8 +40,6 @@ qt_add_executable(TerraVoxelHttpServer
     meshserializer.cpp
     meshcache.h
     meshcache.cpp
-    rastercache.h
-    rastercache.cpp
     wkbreader.h
     wkbreader.cpp
     codelist.h

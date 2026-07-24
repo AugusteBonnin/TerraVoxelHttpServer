@@ -48,12 +48,6 @@ public:
     QString meshUrl() const;
     void setMeshUrl(const QString &meshUrl);
 
-    QString orthoUrl() const;
-    void setOrthoUrl(const QString &orthoUrl);
-
-    QString mntUrl() const;
-    void setMntUrl(const QString &mntUrl);
-
     QJsonArray children() const;
     void setChildren(const QJsonArray &children);
     void addChild(const QJsonObject &child);
@@ -70,8 +64,6 @@ private:
     EntityBounds m_rectangle;
     EntityBounds m_square;
     QString m_meshUrl;
-    QString m_orthoUrl;
-    QString m_mntUrl;
     QJsonArray m_children;
 };
 
