@@ -39,14 +39,8 @@ QJsonObject Tuile::toJson(bool includeChildren) const
     QJsonObject json;
     json.insert(QStringLiteral("id"), key());
     json.insert(QStringLiteral("niveau"), m_level);
-    json.insert(QStringLiteral("minX"), xmin());
-    json.insert(QStringLiteral("minY"), ymin());
-    json.insert(QStringLiteral("est"), xmin());
-    json.insert(QStringLiteral("nord"), ymin());
     json.insert(QStringLiteral("xmin"), xmin());
     json.insert(QStringLiteral("ymin"), ymin());
-    json.insert(QStringLiteral("xmax"), xmax());
-    json.insert(QStringLiteral("ymax"), ymax());
     json.insert(QStringLiteral("centreX"), centerX());
     json.insert(QStringLiteral("centreY"), centerY());
     json.insert(QStringLiteral("cache"), TilePyramid::cacheDirectory(*this));
