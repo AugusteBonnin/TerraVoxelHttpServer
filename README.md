@@ -90,7 +90,9 @@ Dans un déploiement réel, TerraVoxelHttpServer peut être exécuté en arrièr
 Un schéma simple est le suivant :
 
 - nginx sert les fichiers HTML/CSS/JS depuis un répertoire de pages statiques
-- nginx proxy les routes `/api/`, `/cache/`, `/tiles/` et `/health` vers `127.0.0.1:8080`
+- nginx proxy les routes `/api/`, `/cache/` et `/health` vers `127.0.0.1:8080`
+- nginx sert directement `/tiles/` depuis le cache et ne sollicite le backend
+  que pour générer un asset absent
 - nginx gère déjà l’HTTPS et la redirection depuis le port 80 vers le port 443
 - TerraVoxelHttpServer continue à gérer la logique métier, les accès base de données, le cache disque et les réponses binaires
 
@@ -130,9 +132,19 @@ server {
     }
 
     location /tiles/ {
+        root /var/www/terravoxel/cache;
+        try_files $uri @terravoxel_tile_generator;
+    }
+
+    location @terravoxel_tile_generator {
         proxy_pass http://terravoxel_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /_terravoxel_tiles/ {
+        internal;
+        alias /var/www/terravoxel/cache/tiles/;
     }
 }
 ```

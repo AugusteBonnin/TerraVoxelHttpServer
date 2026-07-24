@@ -44,10 +44,20 @@ server {
 
     location /tiles/ {
         limit_req zone=terravoxel_limit burst=20 nodelay;
+        root /var/www/terravoxel/cache;
+        try_files $uri @terravoxel_tile_generator;
+    }
+
+    location @terravoxel_tile_generator {
         proxy_pass http://terravoxel_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /_terravoxel_tiles/ {
+        internal;
+        alias /var/www/terravoxel/cache/tiles/;
     }
 }
 

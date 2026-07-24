@@ -5,8 +5,8 @@
 #include "tileset.h"
 
 #include <QDateTime>
-#include <QFile>
 #include <QHostAddress>
+#include <QHttpHeaders>
 #include <QHttpServerRequest>
 #include <QHttpServerResponder>
 #include <QJsonDocument>
@@ -37,11 +37,11 @@ QString repositoryMeshType(const QString &type)
     return type == QStringLiteral("epci") ? QStringLiteral("epcis") : type;
 }
 
-QByteArray mimeType(const QString &assetName)
+QString canonicalTileAssetName(const QString &assetName)
 {
-    if (assetName == QStringLiteral("ortho.jpg"))
-        return QByteArrayLiteral("image/jpeg");
-    return QByteArrayLiteral("application/octet-stream");
+    return assetName == QStringLiteral("mnt.bil")
+        ? QStringLiteral("mnt.bin")
+        : assetName;
 }
 
 } // namespace
@@ -383,15 +383,12 @@ void HttpServer::handleTileAssetRequest(const QHttpServerRequest &request, QHttp
         return;
     }
 
-    auto *file = new QFile(path);
-    if (!file->open(QIODevice::ReadOnly)) {
-        const QString fileError = file->errorString();
-        delete file;
-        responder.sendResponse(
-            failure(fileError, QHttpServerResponder::StatusCode::InternalServerError));
-        return;
-    }
-    responder.write(file, mimeType(assetName));
+    const QString internalUrl =
+        QStringLiteral("/_terravoxel_tiles/%1/%2")
+            .arg(value.key(), canonicalTileAssetName(assetName));
+    QHttpHeaders headers;
+    headers.append(QByteArrayLiteral("X-Accel-Redirect"), internalUrl.toUtf8());
+    responder.write(headers);
 }
 
 void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request,

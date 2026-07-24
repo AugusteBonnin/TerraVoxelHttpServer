@@ -80,6 +80,11 @@ L’index spatial ne change pas l’ordre mémoire des rasters. La BBOX WMS rest
 le serveur WMS : première ligne au nord, puis progression vers le sud. Aucun
 retournement vertical n’est effectué lors de la mise en cache.
 
+En production, nginx sert directement ces ressources depuis le cache disque.
+Lorsqu’un fichier manque, nginx transmet la requête au serveur C++, qui génère
+l’asset et répond avec `X-Accel-Redirect`. nginx effectue alors l’envoi du
+fichier au client ; son contenu ne transite pas par la mémoire du serveur C++.
+
 ## Couverture d’une entité
 
 ```text
