@@ -4,9 +4,9 @@
 #include "meshserializer.h"
 #include "tilepyramid.h"
 
+#include <QByteArray>
 #include <QDir>
 #include <QEventLoop>
-#include <QFile>
 #include <QFileInfo>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -87,42 +87,22 @@ QString TileCache::assetPath(const Tuile &tile, const QString &assetName) const
     return QDir(directory(tile)).filePath(canonicalName);
 }
 
-bool TileCache::readAsset(const Tuile &tile,
-                          const QString &assetName,
-                          QByteArray *data,
-                          QString *errorMessage) const
+bool TileCache::ensureFlatMesh(const Tuile &tile,
+                               QString *path,
+                               QString *errorMessage) const
 {
-    if (!data) {
+    if (!path) {
         if (errorMessage)
             *errorMessage = QStringLiteral("Paramètre de sortie absent");
         return false;
     }
-    data->clear();
-
-    const QString path = assetPath(tile, assetName);
-    if (path.isEmpty()) {
+    *path = assetPath(tile, QStringLiteral("mesh.bin"));
+    if (path->isEmpty()) {
         if (errorMessage)
-            *errorMessage = QStringLiteral("Tuile ou ressource invalide");
+            *errorMessage = QStringLiteral("Tuile invalide");
         return false;
     }
-
-    QFile file(path);
-    if (!file.exists())
-        return false;
-    if (!file.open(QIODevice::ReadOnly)) {
-        if (errorMessage)
-            *errorMessage = file.errorString();
-        return false;
-    }
-    *data = file.readAll();
-    return !data->isEmpty();
-}
-
-bool TileCache::ensureFlatMesh(const Tuile &tile,
-                               QByteArray *data,
-                               QString *errorMessage) const
-{
-    if (readAsset(tile, QStringLiteral("mesh.bin"), data, errorMessage))
+    if (QFileInfo::exists(*path))
         return true;
 
     QVector<QVector<Point2D>> triangles{
@@ -145,12 +125,7 @@ bool TileCache::ensureFlatMesh(const Tuile &tile,
         return false;
     }
 
-    const QString path = assetPath(tile, QStringLiteral("mesh.bin"));
-    if (!MeshSerializer::save(mesh, path, errorMessage))
-        return false;
-
-    *data = MeshSerializer::serialize(mesh);
-    return !data->isEmpty();
+    return MeshSerializer::save(mesh, *path, errorMessage);
 }
 
 bool TileCache::downloadRaster(const Tuile &tile,
@@ -207,9 +182,15 @@ bool TileCache::downloadRaster(const Tuile &tile,
 
 bool TileCache::ensureRaster(const Tuile &tile,
                              const QString &assetName,
-                             QByteArray *data,
+                             QString *path,
                              QString *errorMessage) const
 {
+    if (!path) {
+        if (errorMessage)
+            *errorMessage = QStringLiteral("Paramètre de sortie absent");
+        return false;
+    }
+    path->clear();
     if (assetName != QStringLiteral("ortho.jpg")
         && assetName != QStringLiteral("mnt.bin")
         && assetName != QStringLiteral("mnt.bil")) {
@@ -218,7 +199,13 @@ bool TileCache::ensureRaster(const Tuile &tile,
         return false;
     }
 
-    if (readAsset(tile, assetName, data, errorMessage))
+    *path = assetPath(tile, assetName);
+    if (path->isEmpty()) {
+        if (errorMessage)
+            *errorMessage = QStringLiteral("Tuile invalide");
+        return false;
+    }
+    if (QFileInfo::exists(*path))
         return true;
 
     const QString dir = directory(tile);
@@ -228,8 +215,5 @@ bool TileCache::ensureRaster(const Tuile &tile,
         return false;
     }
 
-    const QString path = assetPath(tile, assetName);
-    if (!downloadRaster(tile, assetName, path, errorMessage))
-        return false;
-    return readAsset(tile, assetName, data, errorMessage);
+    return downloadRaster(tile, assetName, *path, errorMessage);
 }

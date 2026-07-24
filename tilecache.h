@@ -3,7 +3,6 @@
 
 #include "tuile.h"
 
-#include <QByteArray>
 #include <QString>
 
 class TileCache
@@ -14,18 +13,13 @@ public:
     QString directory(const Tuile &tile) const;
     QString assetPath(const Tuile &tile, const QString &assetName) const;
 
-    bool readAsset(const Tuile &tile,
-                   const QString &assetName,
-                   QByteArray *data,
-                   QString *errorMessage = nullptr) const;
-
     bool ensureFlatMesh(const Tuile &tile,
-                        QByteArray *data,
+                        QString *path,
                         QString *errorMessage = nullptr) const;
 
     bool ensureRaster(const Tuile &tile,
                       const QString &assetName,
-                      QByteArray *data,
+                      QString *path,
                       QString *errorMessage = nullptr) const;
 
 private:

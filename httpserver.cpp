@@ -5,6 +5,7 @@
 #include "tileset.h"
 
 #include <QDateTime>
+#include <QFile>
 #include <QHostAddress>
 #include <QHttpServerRequest>
 #include <QHttpServerResponder>
@@ -363,14 +364,14 @@ void HttpServer::handleTileAssetRequest(const QHttpServerRequest &request, QHttp
         return;
     }
 
-    QByteArray data;
+    QString path;
     bool success = false;
     if (assetName == QStringLiteral("mesh.bin"))
-        success = m_tileCache.ensureFlatMesh(value, &data, &error);
+        success = m_tileCache.ensureFlatMesh(value, &path, &error);
     else if (assetName == QStringLiteral("ortho.jpg")
              || assetName == QStringLiteral("mnt.bin")
              || assetName == QStringLiteral("mnt.bil"))
-        success = m_tileCache.ensureRaster(value, assetName, &data, &error);
+        success = m_tileCache.ensureRaster(value, assetName, &path, &error);
     else {
         responder.sendResponse(failure(QStringLiteral("Ressource de tuile inconnue : %1").arg(assetName),
                                        QHttpServerResponder::StatusCode::NotFound));
@@ -381,7 +382,16 @@ void HttpServer::handleTileAssetRequest(const QHttpServerRequest &request, QHttp
         responder.sendResponse(failure(error, QHttpServerResponder::StatusCode::BadGateway));
         return;
     }
-    responder.sendResponse(QHttpServerResponse(mimeType(assetName), data));
+
+    auto *file = new QFile(path);
+    if (!file->open(QIODevice::ReadOnly)) {
+        const QString fileError = file->errorString();
+        delete file;
+        responder.sendResponse(
+            failure(fileError, QHttpServerResponder::StatusCode::InternalServerError));
+        return;
+    }
+    responder.write(file, mimeType(assetName));
 }
 
 void HttpServer::handleEntityTilesRequest(const QHttpServerRequest &request,
